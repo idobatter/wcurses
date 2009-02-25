@@ -1046,6 +1046,7 @@ PyMethodDef Window_Methods[] =
 	{"attron", (PyCFunction)Window_attron, METH_VARARGS, ""},
 	{"attrset", (PyCFunction)Window_attrset, METH_VARARGS, ""},
 	{"border", (PyCFunction)Window_border, METH_VARARGS, "Draw a frame at the edge of the window"},
+	{"box", (PyCFunction)Window_box, METH_VARARGS, "Draw a frame at the edge of the window"},
 	{"clear", (PyCFunction)Window_clear, METH_NOARGS, "Clear the window"},
 	{"clrtobot", (PyCFunction)Window_clrtobot, METH_NOARGS, "Clear from the cursor to the end of the window"},
 	{"clrtoeol", (PyCFunction)Window_clrtoeol, METH_NOARGS, "Clear from the cursor to the end of the line"},
