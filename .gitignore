@@ -22,4 +22,4 @@ _UpgradeReport_Files
 Build/
 
 # ..or dlls copied into the staging folder
-python/curses/_WCurses.pyd
+src/python/curses/_WCurses.pyd
