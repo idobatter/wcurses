@@ -1,0 +1,25 @@
+# Visual Studio cruft
+*.user
+*.suo
+*.sln.cache
+
+# C++
+*.ncb
+*.aps
+
+# ReSharper
+_ReSharper.*
+*.resharper
+
+# AnkhSVN
+Ankh.Load
+
+# Old version backups
+*.old
+_UpgradeReport_Files
+
+# Don't check-in from the build folder
+Build/
+
+# ..or dlls copied into the staging folder
+python/curses/_WCurses.pyd
