@@ -72,12 +72,10 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD wDataSeg, LPVOID lpReserved)
 			UnregisterClass(Terminal::ClassName, g_dll_instance);
 			Py_DECREF(g_keymap_dict);
 
+			// We grabbed an extra reference to the default terminal when initscr() was called,
+			// release it here.
 			if(g_called_initscr)
-			{
-				// We grabbed an extra reference to the default terminal when initscr() was called,
-				// release it here.
 				Py_XDECREF(g_default_term);
-			}
 
 			return 1;
 		break;

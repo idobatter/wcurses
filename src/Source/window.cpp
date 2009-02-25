@@ -17,16 +17,17 @@
 int Window_ContainsPoint(Window *win, int x, int y)
 {
 	TRACE("Window_ContainsPoint");
-
-	return (win->offX <= x) && (x < win->offX + win->width) && (win->offY <= y) && (y < win->offY + win->height);
+	return (win->offX <= x) && 
+		(x < win->offX + win->width) && 
+		(win->offY <= y) && 
+		(y < win->offY + win->height);
 }
 
 PyObject *Window_enclose(Window *self, PyObject *args)
 {
-	int y,x;
-
 	TRACE("Window_enclose");
 
+	int y,x;
 	if (!PyArg_ParseTuple(args, "ii", &y, &x))
 		return NULL;
 
@@ -46,10 +47,8 @@ int Window_SetCur(Window *win,int x,int y)
 		win->term->CursorPos(win->offX + win->curx, win->offY + win->cury);
 		return 1;
 	}
-	else
-	{
-		return 0;	// error...
-	}
+
+	return 0;	// error...
 }
 
 int Window_AddChar(Window *win, char_cell ch, int advance_cursor)
@@ -63,9 +62,7 @@ int Window_AddChar(Window *win, char_cell ch, int advance_cursor)
   	win->buffer[win->cury][win->curx]=ch;
 
 	if (advance_cursor)
-	{
 		win->AdvanceCursor();
-	}
 
   	return 1;
 }
@@ -83,42 +80,38 @@ void Window::AdvanceCursor()
 
   	this->curx++;
   	
-  	if (this->curx >= this->width)
-  	{
-  		this->curx=0;
-  		this->cury++;
-  		if (this->cury >= this->height)
-  		{
-  		// if we went past the bottom right character then either scroll
-  		// the window or stick cursor back on last character.
-  			if (this->isScrolling)
-  			{
-  				Window_ScrollUp(this, 0, this->height - 1, 1);
-  			}
-  			else
-  			{
-  				this->curx = this->width - 1;
-  			}
-  			
-			this->cury = this->height - 1; // Move back to the last line from one past the last line
-  		}
-  	}
+  	if (this->curx < this->width)
+  		return;
+  		
+	this->curx=0;
+	this->cury++;
+	
+	if (this->cury < this->height)
+		return;
+
+	// if we went past the bottom right character then either scroll
+	// the window or stick cursor back on last character.
+	if (this->isScrolling)
+		Window_ScrollUp(this, 0, this->height - 1, 1);
+	else
+		this->curx = this->width - 1;
+	
+	this->cury = this->height - 1; // Move back to the last line from one past the last line
 }
 
 void Window_ScrollUp(Window *win, int topline, int botline, int lines)
 {
-	int i;
-
 	TRACE("Window_ScrollUp");
 
-	if (topline > botline) return;
+	if (topline > botline) 
+		return;
 
-	for (i = topline; i <= botline-lines; i++)
+	for (int i = topline; i <= botline-lines; i++)
 	{
 		memcpy(win->buffer[i], win->buffer[i+lines], sizeof(char_cell) * win->width);
 	}
 
-	for (i=0; i<win->width; i++)
+	for (int i=0; i<win->width; i++)
 	{
 		win->buffer[botline][i] = win->background;
 	}
@@ -126,18 +119,17 @@ void Window_ScrollUp(Window *win, int topline, int botline, int lines)
 
 void Window_ScrollDown(Window *win, int topline, int botline, int lines)
 {
-	int i;
-
 	TRACE("Window_ScrollDown");
 
-	if (topline > botline) return;
+	if (topline > botline) 
+		return;
 
-	for (i=botline; i >= topline+lines; i--)
+	for (int i=botline; i >= topline+lines; i--)
 	{
 		memcpy(win->buffer[i], win->buffer[i-lines], sizeof(char_cell) * win->width);
 	}
 
-	for (i=0; i<win->width; i++)
+	for (int i=0; i<win->width; i++)
 	{
 		win->buffer[topline][i] = win->background;
 	}
@@ -145,25 +137,19 @@ void Window_ScrollDown(Window *win, int topline, int botline, int lines)
 
 PyObject *Window_scroll(Window *self, PyObject *args)
 {
-	int lines;
-
 	TRACE("Window_scroll");
 
-	lines = 1;
+	int lines = 1;
 
 	if(!PyArg_ParseTuple(args, "|i", &lines))
 		return NULL;
 
 	Window_ScrollUp(self, 0, self->height - 1, lines);
-
-		Py_RETURN_NONE;
+	Py_RETURN_NONE;
 }
 
 PyObject *Window_New(Window *parent, int begin_x, int begin_y, int width, int height, bool isPad)
 {
-	int i;
-	Window *wo;
-
 	TRACE("Window_New");
 
 	if ((width < 0) || (height < 0))
@@ -202,8 +188,8 @@ PyObject *Window_New(Window *parent, int begin_x, int begin_y, int width, int he
 		}
 	}
 
-	wo = PyObject_NEW(Window, &curses_windowType);
-	if (wo == NULL)
+	Window *wo = PyObject_NEW(Window, &curses_windowType);
+	if (!wo)
 		return NULL;
 
 	wo->background = SPACE;
@@ -227,7 +213,6 @@ PyObject *Window_New(Window *parent, int begin_x, int begin_y, int width, int he
 	wo->_leave_cursor = 0;
 
 
-
 	if (parent != NULL)
 	{
 		wo->parent = parent;
@@ -240,7 +225,7 @@ PyObject *Window_New(Window *parent, int begin_x, int begin_y, int width, int he
 		wo->buffer = (char_cell**)malloc(wo->height * sizeof(char_cell *));
 
 		// Share buffer memory with parent
-		for (i=0; i < wo->height; i++)
+		for (int i=0; i < wo->height; i++)
 		{
 			wo->buffer[i] = &parent->buffer[wo->offY + i][wo->offX];
 		}
@@ -263,11 +248,12 @@ PyObject *Window_New(Window *parent, int begin_x, int begin_y, int width, int he
 
 PyObject *Window_derwin(Window *self, PyObject *args)
 {
-	int begx, begy, width, height;
+	int begx = 0;
+	int begy = 0;
+	int width = 0; 
+	int height = 0;
 
 	TRACE("Window_derwin");
-
-	begx = begy = width = height = 0;
 
 	switch(ARG_COUNT(args))
 	{
@@ -294,12 +280,10 @@ PyObject *Window_derwin(Window *self, PyObject *args)
 
 PyObject *Window_subwin(Window *self, PyObject *args)
 {
-	int begx, begy, width, height;
-	PyObject *wo;
-
-	TRACE("Window_subwin");
-
-	begx = begy = width = height = 0;
+	int begx = 0;
+	int begy = 0;
+	int width = 0; 
+	int height = 0;
 
 	TRACE("Window_subwin");
 
@@ -308,13 +292,11 @@ PyObject *Window_subwin(Window *self, PyObject *args)
 	case 2:
 		if (!PyArg_ParseTuple(args, "ii", &begy, &begx))
 			return NULL;
-
 		break;
 
 	case 4:
 		if (!PyArg_ParseTuple(args, "iiii", &height, &width, &begy, &begx))
 			return NULL;
-
 		break;
 
 	default:
@@ -328,7 +310,7 @@ PyObject *Window_subwin(Window *self, PyObject *args)
 	begy = begy - self->offY;
 
 	TRACE("Window_subwin: before Window_New");
-	wo = Window_New(self, begx, begy, width, height, false);
+	PyObject *wo = Window_New(self, begx, begy, width, height, false);
 	TRACE("Window_subwin: after Window_New");
 
 	return wo;
@@ -377,14 +359,14 @@ PyObject *Window_getch(Window *self,PyObject * args)
 	switch (ARG_COUNT(args))
 	{
 		case 0:
-		break;
+			break;
 		
 		case 2:
 			if (!PyArg_ParseTuple(args,"ii;y,x",&y,&x))
 				return NULL;
 				
 			Window_SetCur(self,x,y);
-		break;
+			break;
 		
 		default:
 			PyErr_SetString(PyExc_TypeError, "getch requires 0 or 2 arguments");
@@ -440,7 +422,9 @@ PyObject *Window_getch(Window *self,PyObject * args)
 
 
 	if (PyList_Size(g_current_term->keybuffer) == 0)
+	{
 		keycode = PyInt_FromLong((long) -1);
+	}
 	else
 	{
 		// Take the next key from the front of the buffer
@@ -479,9 +463,7 @@ PyObject *Window_getch(Window *self,PyObject * args)
 */
 void Window_ScootLineRight(Window *win, int x, int y, int dist)
 {
-	int i;
-
-	for (i = win->width-1; i >= x + dist; i--)
+	for (int i = win->width-1; i >= x + dist; i--)
 	{
 		win->buffer[y][i] = win->buffer[y][i - dist];
 	}
@@ -489,14 +471,11 @@ void Window_ScootLineRight(Window *win, int x, int y, int dist)
 
 PyObject *Window_insch(Window *self, PyObject *args)
 {
-	int ch, attr, x, y;
+	int x = self->curx;
+	int y = self->cury;
+	int attr = self->attr;
 
-//	TRACE("Window_insch");
-
-	x = self->curx;
-	y = self->cury;
-
-	attr = self->attr;
+	int ch;
 
 	switch (ARG_COUNT(args))
 	{
@@ -526,10 +505,8 @@ PyObject *Window_insch(Window *self, PyObject *args)
 	}
 
 	Window_SetCur(self, x, y);
-
 	Window_ScootLineRight(self, x, y, 1);
 	Window_AddChar(self, ch | attr, 0);
-
 	Window_SetCur(self, x, y);
 
 	Py_RETURN_NONE;
@@ -537,14 +514,12 @@ PyObject *Window_insch(Window *self, PyObject *args)
 
 PyObject *Window_insstr(Window *self, PyObject *args)
 {
-	int attr, x, y;
+	int attr;
 	char *str;
 	int str_len;
-	int i;
-	int max_index;
 
-	x = self->curx;
-	y = self->cury;
+	int x = self->curx;
+	int y = self->cury;
 
 	switch (ARG_COUNT(args))
 	{
@@ -573,10 +548,10 @@ PyObject *Window_insstr(Window *self, PyObject *args)
 		return NULL;
 	}
 
-	max_index = min(str_len, self->width - x);
+	int max_index = min(str_len, self->width - x);
 	Window_SetCur(self, x, y);
 	
-	for (i = 0; i < max_index; i++)
+	for (int i = 0; i < max_index; i++)
 	{
 
 	}
@@ -589,13 +564,10 @@ PyObject *Window_insstr(Window *self, PyObject *args)
 PyObject *Window_addch(Window *self, PyObject *args)
 {
 	PyObject *objch;
-	int attr;
-	char_cell ch;
-	int x,y;
 
-	x = 0;
-	y = 0;
-	attr = self->attr;
+	int x = 0;
+	int y = 0;
+	int attr = self->attr;
 
 	switch (ARG_COUNT(args))
 	{
@@ -630,6 +602,7 @@ PyObject *Window_addch(Window *self, PyObject *args)
 			return NULL;
 	}
 
+	char_cell ch;
 	if (!ObjectToChar(objch, &ch))
 	{
 		PyErr_SetString(PyExc_TypeError, "Character should be an int or 1 char string");
@@ -637,7 +610,6 @@ PyObject *Window_addch(Window *self, PyObject *args)
 	}
 
 	Window_AddChar(self,(attr | ch), 1);
-    	
 	Py_RETURN_NONE;
 }
 
@@ -645,11 +617,8 @@ PyObject *Window_addstr(Window *self, PyObject *args)
 {
 	char *str;
 	int x,y;
-	int attr;
 
-//	TRACE("Window_addstr");
-
-	attr = self->attr;
+	int attr = self->attr;
 	
 	switch (ARG_COUNT(args))
 	{
@@ -700,7 +669,6 @@ PyObject *Window_addstr(Window *self, PyObject *args)
 
 PyObject *Window_noutrefresh(Window *self, PyObject *args)
 {
-	int y,x;
 	int pminrow, pmincol, sminrow, smincol, smaxrow, smaxcol;
 	int src_startx, src_starty, dest_startx, dest_starty, copy_width, copy_height;
 
@@ -709,9 +677,8 @@ PyObject *Window_noutrefresh(Window *self, PyObject *args)
 	if (self->isPad)
 	{
 		if(!PyArg_ParseTuple(args, "iiiiii", &pminrow, &pmincol, &sminrow, &smincol, &smaxrow, &smaxcol))
-		{
 			return NULL;
-		}
+
 		src_startx = pmincol;
 		src_starty = pminrow;
 		dest_startx = smincol;
@@ -722,18 +689,17 @@ PyObject *Window_noutrefresh(Window *self, PyObject *args)
 	else
 	{
 		if (!PyArg_ParseTuple(args, ""))
-		{
 			return NULL;
-		}
+
 		src_startx = src_starty = dest_startx = dest_starty = 0;
 		copy_width = self->width;
 		copy_height = self->height;
 	}
 
 	// Copy our line buffer to our terminal's screen buffer
-	for (y=0;y<copy_height;y++)
+	for (int y=0; y < copy_height; y++)
 	{
-		for (x=0;x<copy_width;x++)
+		for (int x=0; x < copy_width; x++)
 		{
 			g_current_term->buffer[y+self->offY+dest_starty][x+self->offX+dest_startx]=self->buffer[y+src_starty][x+src_startx];
 		}
@@ -764,7 +730,6 @@ PyObject *Window_refresh(Window *self, PyObject *args)
 PyObject *Window_mvwin(Window *self,PyObject * args)
 {
 	int newx, newy;
-	
 	if (!PyArg_ParseTuple(args,"ii;y,x", &newy, &newx))
 		return NULL;
 
@@ -780,7 +745,6 @@ PyObject *Window_insertln(Window *self, PyObject * args)
 		return NULL;
 
 	Window_ScrollDown(self, self->cury, self->height-1, 1);
-
 	Py_RETURN_NONE;		
 }
 
@@ -790,7 +754,6 @@ PyObject *Window_deleteln(Window *self, PyObject * args)
 		return NULL;
 
 	Window_ScrollUp(self, self->cury, self->height-1, 1);
-
 	Py_RETURN_NONE;		
 }
 
@@ -798,7 +761,6 @@ PyObject *Window_deleteln(Window *self, PyObject * args)
 PyObject *Window_insdelln(Window *self,PyObject * args)
 {
 	int lines;
-
 	if (!PyArg_ParseTuple(args, "i", &lines))
 		return NULL;
 
@@ -812,11 +774,9 @@ PyObject *Window_insdelln(Window *self,PyObject * args)
 
 PyObject *Window_clear(Window *self)
 {
-	int y;
-
 	TRACE("Window_clear");
 
-	for (y=0;y<self->height;y++)
+	for (int y=0;y<self->height;y++)
 		memset(self->buffer[y], self->background, self->width * sizeof(char_cell));
 
 	Py_RETURN_NONE;		
@@ -824,11 +784,9 @@ PyObject *Window_clear(Window *self)
 
 PyObject *Window_clrtoeol(Window *self)
 {
-	int x;
-
 	TRACE("Window_clrtoeol");
 	
-	for (x=self->curx;x<self->width;x++)
+	for (int x=self->curx;x<self->width;x++)
 		self->buffer[self->cury][x]=self->background;
 
 	Py_RETURN_NONE;		
@@ -836,19 +794,12 @@ PyObject *Window_clrtoeol(Window *self)
 
 PyObject *Window_clrtobot(Window *self)
 {
-	int y;
-	PyObject *result;
-
 	TRACE("Window_clrtobot");
 	
-	result = Window_clrtoeol(self);
-	if (result)
-		Py_DECREF(result);
-	else
-		return NULL;
+	CHECK( Window_clrtoeol(self) );
 		
 	// clear all subsequent lines
-	for (y=self->cury+1; y < self->height; y++)
+	for (int y=self->cury+1; y < self->height; y++)
 		memset(self->buffer[y], self->background,self->width);
 	
 	Py_RETURN_NONE;		
@@ -858,48 +809,40 @@ PyObject *Window_clrtobot(Window *self)
 PyObject *Window_keypad(Window *self, PyObject *args)
 {
 	int keypad;
-
 	if (!PyArg_ParseTuple(args, "i", &keypad))
 		return NULL;
 
 	self->term->_keypad = keypad;
-
 	Py_RETURN_NONE;
 }
 
 PyObject *Window_leaveok(Window *self, PyObject *args)
 {
 	int leave_cursor;
-
 	if(!PyArg_ParseTuple(args, "i", &leave_cursor))
 		return NULL;
 
 	self->_leave_cursor = leave_cursor;
-
 	Py_RETURN_NONE;
 }
 
 PyObject *Window_nodelay(Window *self, PyObject *args)
 {
 	int nodelay;
-
 	if(!PyArg_ParseTuple(args, "i", &nodelay))
 		return NULL;
 
 	self->noDelay = nodelay;
-
 	Py_RETURN_NONE;
 }
 
 PyObject *Window_hline(Window *self, PyObject *args)
 {
 	int y, x, ch, n;
-	int i;
-	int attr;
 
 	TRACE("Window_hline");
 
-	attr = self->attr;
+	int attr = self->attr;
 
 	switch(ARG_COUNT(args))
 	{
@@ -923,7 +866,7 @@ PyObject *Window_hline(Window *self, PyObject *args)
 	}
 
 	n = min(n, self->width - x);
-	for (i = x; i < x+n; i++)
+	for (int i = x; i < x+n; i++)
 	{
 		self->buffer[y][i] = ch | attr;
 	}
@@ -933,13 +876,10 @@ PyObject *Window_hline(Window *self, PyObject *args)
 
 PyObject *Window_vline(Window *self, PyObject *args)
 {
-	int y, x, ch, n;
-	int i;
-	int attr;
-
 	TRACE("Window_vline");
 
-	attr = self->attr;
+	int y, x, ch, n;
+	int attr = self->attr;
 
 	switch(ARG_COUNT(args))
 	{
@@ -963,7 +903,7 @@ PyObject *Window_vline(Window *self, PyObject *args)
 	}
 
 	n = min(n, self->height - y);
-	for (i = y; i < y+n; i++)
+	for (int i = y; i < y+n; i++)
 	{
 		self->buffer[i][x] = ch | attr;
 	}
@@ -977,11 +917,10 @@ PyObject *Window_border(Window *self, PyObject *args)
 	int savey, savex;
 	int savescrolling;
 	int ls, rs, ts, bs, tl, tr, bl, br;
-	int attr;
 
 	TRACE("Window_border");
 
-	attr = self->attr;
+	int attr = self->attr;
 
 	ls = rs = ts = bs = tl = tr = bl = br = 0;
 
@@ -1029,71 +968,54 @@ PyObject *Window_border(Window *self, PyObject *args)
 
 PyObject *Window_attrset(Window *self, PyObject *args)
 {
-	int attr;
-
 	TRACE("Window_attrset");
 
+	int attr;
 	if (!PyArg_ParseTuple(args, "i", &attr))
-	{
 		return NULL;
-	}
 
 	self->attr = attr;
-
 	Py_RETURN_NONE;
 }
 
 PyObject *Window_attron(Window *self, PyObject *args)
 {
-	int attr;
-
 	TRACE("Window_attron");
 
+	int attr;
 	if (!PyArg_ParseTuple(args, "i", &attr))
-	{
 		return NULL;
-	}
 
 	self->attr |= attr;
-
 	Py_RETURN_NONE;
 }
 
 PyObject *Window_attroff(Window *self, PyObject *args)
 {
-	int attr;
-
 	TRACE("Window_attroff");
 
+	int attr;
 	if (!PyArg_ParseTuple(args, "i", &attr))
-	{
 		return NULL;
-	}
 
 	self->attr &= ~attr;
-
 	Py_RETURN_NONE;
 }
 
 PyObject  *Window_overlay(Window *self, PyObject *args)
 {
-	Window *destwin;
-	int startx, starty, endx, endy;
-	int ix, iy;
-
 	TRACE("Window_overlay");
 	printf("overlay\n");
 
+	Window *destwin;
 	if(!PyArg_ParseTuple(args, "O!", &curses_windowType, &destwin))
-	{
 		return NULL;
-	}
 
-	startx = max(self->offX, destwin->offX);
-	endx = min(self->offX + self->width -1, destwin->offX + destwin->width - 1);
+	int startx = max(self->offX, destwin->offX);
+	int endx = min(self->offX + self->width -1, destwin->offX + destwin->width - 1);
 
-	starty = max(self->offY, destwin->offY);
-	endy = min(self->offY + self->height - 1, destwin->offY + destwin->height - 1);
+	int starty = max(self->offY, destwin->offY);
+	int endy = min(self->offY + self->height - 1, destwin->offY + destwin->height - 1);
 
 	if ((endx < startx) || (endy < starty))
 	{
@@ -1101,9 +1023,9 @@ PyObject  *Window_overlay(Window *self, PyObject *args)
 		Py_RETURN_NONE;
 	}
 	
-	for (iy = starty; iy <= endy; iy++)
+	for (int iy = starty; iy <= endy; iy++)
 	{
-		for (ix = startx; ix <= endx; ix++)
+		for (int ix = startx; ix <= endx; ix++)
 		{
 			// Need to check for background character!
 
@@ -1128,9 +1050,7 @@ void Window_Dealloc(Window *self)
 	TRACE("Window_Dealloc");
 
 	if (self->parent == NULL)
-	{
 		FreeLines(self->buffer, self->height);
-	}
 
 	PyObject_Del(self);
 }

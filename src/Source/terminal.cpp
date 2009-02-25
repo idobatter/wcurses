@@ -97,23 +97,16 @@ void Terminal::dealloc(Terminal *self)
 	DestroyWindow(self->win);
 
 	Py_DECREF(self->keybuffer);
-
 	PyObject_Del(self);
 }
 
 Terminal *Terminal::New()
 {
-	HFONT font;
-	HMENU sysmenu;
-	MENUITEMINFO mitem;
-	Terminal *newterm;
-
 	TRACE("Terminal_New");
 
-	newterm = PyObject_NEW(Terminal, &curses_terminalType);
+	Terminal *newterm = PyObject_NEW(Terminal, &curses_terminalType);
 	if (newterm == NULL)
 		return NULL;
-
 
 	newterm->height = DEFAULT_HEIGHT;
 	newterm->width = DEFAULT_WIDTH;
@@ -166,8 +159,9 @@ Terminal *Terminal::New()
 		);
 
 	// Add some items to the system menu
-	sysmenu = GetSystemMenu(newterm->win, FALSE);
+	HMENU sysmenu = GetSystemMenu(newterm->win, FALSE);
 
+	MENUITEMINFO mitem;
 	mitem.cbSize = sizeof(MENUITEMINFO);
 	mitem.fMask = MIIM_TYPE;
 	mitem.fType = MFT_SEPARATOR;
@@ -176,7 +170,7 @@ Terminal *Terminal::New()
 	InsertMenuItem(sysmenu, -1, TRUE, &mitem);
 
 	// Set the default terminal font
-	font=CreateFontIndirect(&g_default_font);
+	HFONT font = CreateFontIndirect(&g_default_font);
 	newterm->SetFont(font);
 
 	newterm->SetCursorVisibility(1);
@@ -186,10 +180,9 @@ Terminal *Terminal::New()
 
 void Terminal::RedrawText()
 {
-	RECT r;
-
 	TRACE("Terminal_RedrawText");
 
+	RECT r;
 	r.left = 0;
 	r.top = 0;
 	r.right = this->pixel_width - 1;
@@ -238,16 +231,14 @@ int Terminal::SetCursorVisibility(int visibility)
 
 void Terminal::SetFont(HFONT newfont)
 {
-	HDC DC;
 	TEXTMETRIC Metrics;
 	RECT rect,cli_rect;
-	int xh,xw;
 
 	RECT rect_sbar;
 
 	TRACE("Terminal_SetFont");
 
-	DC=GetDC(this->win);
+	HDC DC = GetDC(this->win);
 	SelectFont(DC, newfont);
 	GetTextMetrics(DC, &Metrics);
 	ReleaseDC(this->win, DC);
@@ -264,8 +255,8 @@ void Terminal::SetFont(HFONT newfont)
 	GetWindowRect(this->status_bar, &rect_sbar);
 	this->status_bar_height = rect_sbar.bottom - rect_sbar.top + 1;
 
-	xw=rect.right-rect.left+1-cli_rect.right;
-	xh=rect.bottom-rect.top+1-cli_rect.bottom;
+	int xw = rect.right-rect.left+1-cli_rect.right;
+	int xh = rect.bottom-rect.top+1-cli_rect.bottom;
 	
 	this->pixel_width=xw + (this->cell_width * this->width);
 	this->pixel_height=xh + (this->cell_height * this->height) + this->status_bar_height;
@@ -374,20 +365,18 @@ void Terminal::OnChar(TCHAR ch, int cRepeat)
 
 void Terminal::OnKey(UINT vkey, BOOL fDown, int cRepeat, UINT flags)
 {
-	PyObject *mappedkey;
-	int i;
-
 	// Don't do anything for KEYUP messages.
-	if (!fDown)	return;
+	if (!fDown)
+		return;
 
-	mappedkey = PyDict_GetItem(g_keymap_dict, PyInt_FromLong(vkey));
-	if(mappedkey)
+	PyObject *mappedkey = PyDict_GetItem(g_keymap_dict, PyInt_FromLong(vkey));
+	if (!mappedkey)
+		return;
+
+	for (int i=0; i < cRepeat; i++)
 	{
-		for (i=0; i < cRepeat; i++)
-		{
-			Py_INCREF(mappedkey);
-			PyList_Append(this->keybuffer, mappedkey);
-		}
+		Py_INCREF(mappedkey);
+		PyList_Append(this->keybuffer, mappedkey);
 	}
 }
 

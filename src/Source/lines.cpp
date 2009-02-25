@@ -4,14 +4,11 @@
 
 char_cell **AllocLines(int nlines, int ncols, char_cell default_char)
 {
-	char_cell **lines;
-	int i, j;
-
-	lines = (char_cell**)malloc(nlines * sizeof(char_cell *));
-	for (i=0; i < nlines; i++)
+	char_cell **lines = (char_cell**)malloc(nlines * sizeof(char_cell *));
+	for (int i=0; i < nlines; i++)
 	{
 		lines[i] = (char_cell*)malloc(ncols * sizeof(char_cell));
-		for (j=0; j < ncols; j++)
+		for (int j=0; j < ncols; j++)
 		{
 			lines[i][j] = default_char;
 		}
@@ -22,9 +19,7 @@ char_cell **AllocLines(int nlines, int ncols, char_cell default_char)
 
 void FreeLines(char_cell **lines, int nlines)
 {
-	int i;
-
-	for (i=0; i<nlines; i++)
+	for (int i=0; i<nlines; i++)
 	{
 		free(lines[i]);
 	}

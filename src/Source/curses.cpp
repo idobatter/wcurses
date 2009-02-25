@@ -59,17 +59,16 @@ int ObjectToChar(PyObject *obj, char_cell *ch)
 	if (PyInt_Check(obj))
 	{
 		*ch = (char_cell) PyInt_AsLong(obj);
-	}
-	else if(PyString_Check(obj) && (PyString_Size(obj) == 1))
-	{
-		*ch = (char_cell) *PyString_AsString(obj);
-	} 
-	else 
-	{
-		return 0;
+		return 1;
 	}
 
-	return 1;
+	if(PyString_Check(obj) && (PyString_Size(obj) == 1))
+	{
+		*ch = (char_cell) *PyString_AsString(obj);
+		return 1;
+	}
+	
+	return 0;
 }
 
 void crack_color(int color, int *r, int *g, int *b)
@@ -82,14 +81,11 @@ void crack_color(int color, int *r, int *g, int *b)
 }
 
 
-
 void InitializeColors()
 {
-	int i;
-
 	g_color_pairs[0] = 7;
 
-	for (i=1; i < 256; i++)
+	for (int i=1; i < 256; i++)
 	{
 		g_color_pairs[i] = 0;
 	}
@@ -102,55 +98,47 @@ PyObject *Curses_longname(PyObject *self)
 
 PyObject *Curses_ConsoleSize(PyObject *self, PyObject *args)
 {
-	int nlines,ncols;
+	int nlines, ncols;
 
 	TRACE("Curses_ConsoleSize");
 	
-	if (!g_called_initscr)
-	{
-		if (!PyArg_ParseTuple(args,"ii;nlines,ncols",	&nlines,&ncols))
-	    	return NULL;
-
-		Py_RETURN_NONE;
-	}
-	else
-	{
+	if (g_called_initscr)
 		return NULL;
-	}
+	
+	if (!PyArg_ParseTuple(args,"ii;nlines,ncols",	&nlines,&ncols))
+    	return NULL;
+
+	Py_RETURN_NONE;
 }
 
 
 PyObject *Curses_newwin(PyObject *self, PyObject *args)
 {
-	int nlines,ncols,begin_y,begin_x;
+	int nlines = 0;
+	int ncols = 0;
+	int begin_y = 0;
+	int begin_x = 0;
 
 	TRACE("Curses_newwin");
 
-	nlines = 0;
-	ncols = 0;
-	begin_y = 0;
-	begin_x = 0;
+	switch (ARG_COUNT(args)) 
+	{
+		case 2:
+			if (!PyArg_ParseTuple(args,"ii;begin_y,begin_x", &begin_y,&begin_x))
+				return NULL;
+			break;
 
-	switch (ARG_COUNT(args)) {
-	case 2:
-		if (!PyArg_ParseTuple(args,"ii;begin_y,begin_x",
-											&begin_y,&begin_x))
-		{
-			return NULL;
-		}
-		break;
+		case 4:
+			if (!PyArg_ParseTuple(
+				args,"iiii;nlines,ncols,begin_y,begin_x", &nlines,&ncols,&begin_y,&begin_x))
+			{
+				return NULL;
+			}
+			break;
 
-	case 4:
-		if (!PyArg_ParseTuple(args,"iiii;nlines,ncols,begin_y,begin_x",
-											&nlines,&ncols,&begin_y,&begin_x))
-		{
-			return NULL;
-		}
-		break;
-
-	default:
-			PyErr_SetString(PyExc_TypeError, "newwin requires 2 or 4 arguments");
-			return NULL;
+		default:
+				PyErr_SetString(PyExc_TypeError, "newwin requires 2 or 4 arguments");
+				return NULL;
 	}
 	
 	return (PyObject *)Window_New(NULL, begin_x, begin_y, ncols, nlines, false);
@@ -159,17 +147,13 @@ PyObject *Curses_newwin(PyObject *self, PyObject *args)
 
 PyObject *Curses_newpad(PyObject *self, PyObject *args)
 {
-	int nlines,ncols;
+	int nlines = 0;
+	int ncols = 0;
 
 	TRACE("Curses_newpad");
 
-	nlines = 0;
-	ncols = 0;
-
 	if (!PyArg_ParseTuple(args, "ii", &nlines, &ncols))
-	{
 		return NULL;
-	}
 
 	return (PyObject *)Window_New(NULL, 0, 0, ncols, nlines, true);
 }
@@ -186,18 +170,16 @@ PyObject *Curses_endwin(PyObject *self,PyObject *args)
 	}
 
 	if (g_current_term != NULL)
-	{
 		Py_DECREF(g_current_term);
-	}
 
-		Py_RETURN_NONE;
+	Py_RETURN_NONE;
 }
 
 PyObject *Curses_doupdate(PyObject *self)
 {
 	TRACE("Curses_doupdate");
 	g_current_term->RedrawText();
-		Py_RETURN_NONE;
+	Py_RETURN_NONE;
 }
 
 PyObject *Curses_init_pair(PyObject *self, PyObject *args)
@@ -209,26 +191,21 @@ PyObject *Curses_init_pair(PyObject *self, PyObject *args)
 	TRACE("Curses_init_pair");
 
 	if(!PyArg_ParseTuple(args, "iii", &pair, &fg, &bg))
-	{
 		return NULL;
-	}
 
 	color = (bg << 4) | fg;
 	g_color_pairs[pair] = color;
 
 //	printf("%d: %d = %d/%d\n", pair, color, fg, bg);
 
-		Py_RETURN_NONE;
+	Py_RETURN_NONE;
 }
 
 PyObject *Curses_color_pair(PyObject *self, PyObject *args)
 {
 	int which_pair;
-
 	if(!PyArg_ParseTuple(args, "i", &which_pair))
-	{
 		return NULL;
-	}
 
 	return PyInt_FromLong(which_pair << 8);
 }
@@ -242,7 +219,7 @@ PyObject *Curses_curs_set(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "i", &visibility))
 		return NULL;
 
-	if ( (visibility < 0) || (2 < visibility))
+	if ((visibility < 0) || (2 < visibility))
 	{
 		PyErr_SetString(PyExc_ValueError, "visibility should be 0, 1, or 2");
 		return NULL;
@@ -265,9 +242,7 @@ PyObject *Curses_napms(PyObject *self, PyObject *args)
 		return NULL;
 
 	if ((nap_time_ms !=0) && (nap_time_ms != INFINITE))
-	{
 		Sleep(nap_time_ms);
-	}
 
 	Py_RETURN_NONE;
 }
@@ -276,7 +251,6 @@ PyObject *Curses_flash(PyObject *self)
 {
 	TRACE("Curses_flash");
 	FlashWindow(g_current_term->win, TRUE);
-
 	Py_RETURN_NONE;
 }
 
@@ -284,28 +258,24 @@ PyObject *Curses_beep(PyObject *self)
 {
 	TRACE("Curses_beep");
 	MessageBeep(MB_OK);
-
 	Py_RETURN_NONE;
 }
 
 PyObject *Curses_echo(PyObject *self)
 {
 	g_current_term->_echo = 1;
-
 	Py_RETURN_NONE;
 }
 
 PyObject *Curses_noecho(PyObject *self)
 {
 	g_current_term->_echo = 0;
-
 	Py_RETURN_NONE;
 }
 
 PyObject *Curses_cbreak(PyObject *self)
 {
 	g_current_term->_cbreak = 1;
-
 	Py_RETURN_NONE;
 }
 
@@ -313,7 +283,6 @@ PyObject *Curses_nocbreak(PyObject *self)
 {
 	g_current_term->_cbreak = 0;
 	g_current_term->_halfdelay = 0;
-
 	Py_RETURN_NONE;
 }
 
@@ -324,7 +293,6 @@ PyObject *Curses_halfdelay(PyObject *self, PyObject *args)
 		return NULL;
 
 	g_current_term->_halfdelay = delay;
-
 	Py_RETURN_NONE;
 }
 
@@ -340,7 +308,6 @@ PyObject *Curses_meta(PyObject *self, PyObject *args)
 		return NULL;
 
 	g_current_term->allow8bitInput = meta;
-
 	Py_RETURN_NONE;
 }
 
@@ -382,18 +349,14 @@ PyObject *Curses_flushinp(PyObject *self)
 {
 	PySequence_DelSlice(g_current_term->keybuffer, 0, -1);
 	g_current_term->ungetch = -1;
-
 	Py_RETURN_NONE;
 }
 
 PyObject *Curses_ungetch(PyObject *self, PyObject *args)
 {
 	int ch;
-
 	if(!PyArg_ParseTuple(args, "i", &ch))
-	{
 		return NULL;
-	}
 
 	if (g_current_term->ungetch != -1)
 	{
@@ -413,7 +376,7 @@ PyObject *Noop(PyObject *self,PyObject *args)
 
 PyObject *NoArg_None(PyObject *self)
 {
-		Py_RETURN_NONE;
+	Py_RETURN_NONE;
 }
 
 PyObject *NoArg_False(PyObject *self)
@@ -423,7 +386,7 @@ PyObject *NoArg_False(PyObject *self)
 
 PyObject *NoArg_True(PyObject *self)
 {
-		Py_RETURN_TRUE;
+	Py_RETURN_TRUE;
 }
 
 
