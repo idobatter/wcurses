@@ -1081,7 +1081,7 @@ PyMethodDef Window_Methods[] =
 	/*
 		Some functions are implmented as no-ops for now. 
 		Because some curses functions don't make sense for windows 
-		(timtout/notimeout), they will be left as no-ops in the final
+		(timeout/notimeout), they will be left as no-ops in the final
 		code release, though they will test for the appropriate number of
 		arguments.
 

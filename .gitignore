@@ -1,3 +1,6 @@
+# Python
+*.pyc
+
 # Visual Studio cruft
 *.user
 *.suo
