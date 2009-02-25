@@ -391,14 +391,6 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Doc"
-			>
-		</Filter>
-		<Filter
-			Name="Setup"
-			>
-		</Filter>
-		<Filter
 			Name="Resource"
 			>
 			<File
@@ -416,6 +408,10 @@
 		</Filter>
 		<File
 			RelativePath=".\Resource\resource.h"
+			>
+		</File>
+		<File
+			RelativePath=".\setup.txt"
 			>
 		</File>
 	</Files>
