@@ -36,7 +36,6 @@ struct Window
 
 	void AdvanceCursor();
 };
-//typedef struct Window Window;
 
 extern PyTypeObject curses_windowType;
 #define Window_Check(v)	 ((v)->ob_type == &curses_windowType)

@@ -53,11 +53,6 @@ int Window_SetCur(Window *win,int x,int y)
 
 int Window_AddChar(Window *win, char_cell ch, int advance_cursor)
 {
-/*
-	Too much output from this trace
-	TRACE("Window_AddChar");
-*/
-
 	// we always assume that the cursor is in a valid position...
   	win->buffer[win->cury][win->curx]=ch;
 
@@ -73,11 +68,6 @@ int Window_AddChar(Window *win, char_cell ch, int advance_cursor)
 */
 void Window::AdvanceCursor()
 {
-/*
-	Too much output from this trace
-	TRACE("Window_AdvanceCursor");
-*/
-
   	this->curx++;
   	
   	if (this->curx < this->width)
@@ -107,14 +97,10 @@ void Window_ScrollUp(Window *win, int topline, int botline, int lines)
 		return;
 
 	for (int i = topline; i <= botline-lines; i++)
-	{
 		memcpy(win->buffer[i], win->buffer[i+lines], sizeof(char_cell) * win->width);
-	}
 
-	for (int i=0; i<win->width; i++)
-	{
+	for (int i=0; i < win->width; i++)
 		win->buffer[botline][i] = win->background;
-	}
 }
 
 void Window_ScrollDown(Window *win, int topline, int botline, int lines)
@@ -125,14 +111,10 @@ void Window_ScrollDown(Window *win, int topline, int botline, int lines)
 		return;
 
 	for (int i=botline; i >= topline+lines; i--)
-	{
 		memcpy(win->buffer[i], win->buffer[i-lines], sizeof(char_cell) * win->width);
-	}
 
 	for (int i=0; i<win->width; i++)
-	{
 		win->buffer[topline][i] = win->background;
-	}
 }
 
 PyObject *Window_scroll(Window *self, PyObject *args)
@@ -140,7 +122,6 @@ PyObject *Window_scroll(Window *self, PyObject *args)
 	TRACE("Window_scroll");
 
 	int lines = 1;
-
 	if(!PyArg_ParseTuple(args, "|i", &lines))
 		return NULL;
 
@@ -154,8 +135,8 @@ PyObject *Window_New(Window *parent, int begin_x, int begin_y, int width, int he
 
 	if ((width < 0) || (height < 0))
 	{
-			PyErr_SetString(CursesError, "Negative height or width given for new window.");
-			return NULL;
+		PyErr_SetString(CursesError, "Negative height or width given for new window.");
+		return NULL;
 	}
 
 	if (parent != NULL)
@@ -272,7 +253,6 @@ PyObject *Window_derwin(Window *self, PyObject *args)
 	default:
 		PyErr_SetString(PyExc_TypeError, "derwin requires 2 or 4 arguments: [nlines, ncols], begin_y, begin_x");
 		return NULL;
-		break;
 	}
 
 	return Window_New(self, begx, begy, width, height, false);
@@ -302,7 +282,6 @@ PyObject *Window_subwin(Window *self, PyObject *args)
 	default:
 		PyErr_SetString(PyExc_TypeError, "subwin requires 2 or 4 arguments: [nlines, ncols], begin_y, begin_x");
 		return NULL;
-		break;
 	}
 
 	// Change origin from screen to parent coordinates
@@ -345,41 +324,43 @@ PyObject *Window_move(Window *self,PyObject *args)
 	Py_RETURN_NONE;
 }
 
+PyObject *get_keycode_from_buffer(PyObject *keybuffer)
+{
+	if (PyList_Size(keybuffer) == 0)
+		return PyInt_FromLong((long) -1);
+
+	// Take the next key from the front of the buffer
+	PyObject *keycode = PyList_GetItem(keybuffer, 0);
+	PySequence_DelItem(keybuffer, 0);
+	return keycode;
+}
+
+
 PyObject *Window_getch(Window *self,PyObject * args)
 {
-	PyObject *result;
-	PyObject *args_to_pass;
-	MSG msg;
-	int x, y;
-	int rtn;
-	PyObject *keycode;
-
 	TRACE("Window_getch");
 	
-	switch (ARG_COUNT(args))
+	int nargs = ARG_COUNT(args);
+	if (nargs == 2)
 	{
-		case 0:
-			break;
-		
-		case 2:
-			if (!PyArg_ParseTuple(args,"ii;y,x",&y,&x))
-				return NULL;
-				
-			Window_SetCur(self,x,y);
-			break;
-		
-		default:
-			PyErr_SetString(PyExc_TypeError, "getch requires 0 or 2 arguments");
+		int x, y;
+		if (!PyArg_ParseTuple(args,"ii;y,x",&y,&x))
 			return NULL;
+			
+		Window_SetCur(self,x,y);
+	}
+	else if (nargs != 0)
+	{
+		PyErr_SetString(PyExc_TypeError, "getch requires 0 or 2 arguments");
+		return NULL;
 	}
 
 	// If there is a key in the pushback buffer, return that.
-	if(self->term->ungetch != -1)
+	if (self->term->ungetch != -1)
 	{
-		rtn = self->term->ungetch;
+		long ungot_character = self->term->ungetch;
 		self->term->ungetch = -1;
-
-		return PyInt_FromLong((long) rtn);
+		return PyInt_FromLong(ungot_character);
 	}
 	
 	if (self->noDelay)
@@ -391,9 +372,7 @@ PyObject *Window_getch(Window *self,PyObject * args)
 
 		// If there still isn't a key in the buffer then bail.
 		if(PyList_Size(g_current_term->keybuffer) == 0)
-		{
 			return PyInt_FromLong((long) -1);
-		}
 	}
 	else
 	{
@@ -413,6 +392,8 @@ PyObject *Window_getch(Window *self,PyObject * args)
 			diff = (double)(((end-start) * 10) / freq);
 
 			WaitMessage();
+
+			MSG msg;
 			GetMessage(&msg,NULL,0,0);
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
@@ -420,38 +401,31 @@ PyObject *Window_getch(Window *self,PyObject * args)
 		g_current_term->waiting_for_key = 0;
 	}
 
-
-	if (PyList_Size(g_current_term->keybuffer) == 0)
-	{
-		keycode = PyInt_FromLong((long) -1);
-	}
-	else
-	{
-		// Take the next key from the front of the buffer
-		keycode = PyList_GetItem(g_current_term->keybuffer, 0);
-		PySequence_DelItem(g_current_term->keybuffer, 0);
-	}
+	PyObject *keycode = get_keycode_from_buffer(g_current_term->keybuffer);
 
 	if (self->term->_echo && (PyInt_AS_LONG(keycode) != -1))
 	{
-		args_to_pass = Py_BuildValue("()");
+		PyObject *result;
+		PyObject *args_none = Py_BuildValue("()");
+		PyObject *args_one = Py_BuildValue("(O)", keycode);
 
 		if (!self->isPad)
 		{
-			result = Window_refresh(self,args_to_pass);
+			result = Window_refresh(self, args_none);
 			CHECK(result);
 		}
 
-		result = Window_addch(self, Py_BuildValue("(O)", keycode));
+		result = Window_addch(self, args_one);
 		CHECK(result);
 
 		if (!self->isPad)
 		{
-			result = Window_refresh(self,args_to_pass);
+			result = Window_refresh(self, args_none);
 			CHECK(result);
 		}
 
-		Py_DECREF(args_to_pass);
+		Py_DECREF(args_none);
+		Py_DECREF(args_one);
 	}
 
 	return keycode;
@@ -464,9 +438,7 @@ PyObject *Window_getch(Window *self,PyObject * args)
 void Window_ScootLineRight(Window *win, int x, int y, int dist)
 {
 	for (int i = win->width-1; i >= x + dist; i--)
-	{
 		win->buffer[y][i] = win->buffer[y][i - dist];
-	}
 }
 
 PyObject *Window_insch(Window *self, PyObject *args)
@@ -563,11 +535,10 @@ PyObject *Window_insstr(Window *self, PyObject *args)
 
 PyObject *Window_addch(Window *self, PyObject *args)
 {
-	PyObject *objch;
-
 	int x = 0;
 	int y = 0;
 	int attr = self->attr;
+	PyObject *objch;
 
 	switch (ARG_COUNT(args))
 	{
@@ -617,7 +588,6 @@ PyObject *Window_addstr(Window *self, PyObject *args)
 {
 	char *str;
 	int x,y;
-
 	int attr = self->attr;
 	
 	switch (ARG_COUNT(args))
@@ -655,7 +625,6 @@ PyObject *Window_addstr(Window *self, PyObject *args)
 	default:
 		PyErr_SetString(PyExc_TypeError, "addstr requires 1-4 arguments");
 		return NULL;
-		break;
 	}
 
 	while(*str)
@@ -796,7 +765,8 @@ PyObject *Window_clrtobot(Window *self)
 {
 	TRACE("Window_clrtobot");
 	
-	CHECK( Window_clrtoeol(self) );
+	PyObject *result=Window_clrtoeol(self);
+	CHECK(result);
 		
 	// clear all subsequent lines
 	for (int y=self->cury+1; y < self->height; y++)
@@ -862,7 +832,6 @@ PyObject *Window_hline(Window *self, PyObject *args)
 	default:
 		PyErr_SetString(PyExc_TypeError, "hline requires 2 or 4 arguments");
 		return NULL;
-		break;
 	}
 
 	n = min(n, self->width - x);
@@ -899,31 +868,18 @@ PyObject *Window_vline(Window *self, PyObject *args)
 	default:
 		PyErr_SetString(PyExc_TypeError, "vline requires 2 or 4 arguments");
 		return NULL;
-		break;
 	}
 
 	n = min(n, self->height - y);
 	for (int i = y; i < y+n; i++)
-	{
-		self->buffer[i][x] = ch | attr;
-	}
+		self->buffer[i][x] = ch | self->attr;
 
 	Py_RETURN_NONE;
 }
 
-PyObject *Window_border(Window *self, PyObject *args)
+PyObject *Window_border_internal(Window *self, int ls, int rs, int ts, int bs, int tl, int tr, int bl, int br)
 {
 	PyObject *result;
-	int ls, rs, ts, bs, tl, tr, bl, br;
-
-	TRACE("Window_border");
-
-	int attr = self->attr;
-
-	ls = rs = ts = bs = tl = tr = bl = br = 0;
-
-	if(!PyArg_ParseTuple(args, "|iiiiii", &ls, &rs, &ts, &bs, &tl, &tr, &bl, &br))
-		return NULL;
 
 	int savey = self->cury;
 	int savex = self->curx;
@@ -940,10 +896,10 @@ PyObject *Window_border(Window *self, PyObject *args)
 
 	self->isScrolling = 0;
 
-	self->buffer[0][0] = tl | attr;
-	self->buffer[0][self->width-1] = tr | attr;
-	self->buffer[self->height-1][0] = bl | attr;
-	self->buffer[self->height-1][self->width-1] = br | attr;
+	self->buffer[0][0] = tl | self->attr;
+	self->buffer[0][self->width-1] = tr | self->attr;
+	self->buffer[self->height-1][0] = bl | self->attr;
+	self->buffer[self->height-1][self->width-1] = br | self->attr;
 	
 	result = Window_hline(self, Py_BuildValue("iiii", 0, 1, ts, self->width-2));
 	CHECK(result);
@@ -962,6 +918,35 @@ PyObject *Window_border(Window *self, PyObject *args)
 	self->isScrolling = savescrolling;
 
 	Py_RETURN_NONE;
+}
+
+PyObject *Window_box(Window *self, PyObject *args)
+{
+	TRACE("Window_box");
+	int vertch = 0, horch = 0;
+
+	if(!PyArg_ParseTuple(args, "|ii", &vertch, &horch))
+		return NULL;
+
+	return Window_border_internal(self, vertch, vertch, horch, horch, 0,0,0,0);
+}
+
+PyObject *Window_border(Window *self, PyObject *args)
+{
+	TRACE("Window_border");
+	int ls = 0;
+	int rs = 0;
+	int ts = 0;
+	int bs = 0;
+	int tl = 0;
+	int tr = 0;
+	int bl = 0;
+	int br = 0;
+
+	if(!PyArg_ParseTuple(args, "|iiiiii", &ls, &rs, &ts, &bs, &tl, &tr, &bl, &br))
+		return NULL;
+
+	return Window_border_internal(self, ls, rs, ts, bs, tl, tr, bl, br);
 }
 
 PyObject *Window_attrset(Window *self, PyObject *args)
