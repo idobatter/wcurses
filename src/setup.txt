@@ -1,0 +1,4 @@
+To install the curses module:
+* Build the project using Visual Studio 2008.
+* Copy "Build/(Configuration)/_WCurses.pyd" to "python/curses"
+* Copy the "python/curses" folder to site-packages or Lib under C:\Python25
