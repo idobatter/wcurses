@@ -2,7 +2,7 @@ Curses for Windows Python extension.
 
 
 This binary was compiled with Microsoft Visual Studio 2008, 
-and linked against Python 2.5.2.
+and linked against Python 2.5.4.
 
 This is a developer preview release of my Curses for Windows Python 
 extension. This module should NOT be considered safe for production work.
