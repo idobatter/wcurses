@@ -1,4 +1,4 @@
-# Copyright (c) 2003-2005, Flangy Software & Adam Vandenberg
+# Copyright (c) 2003-2009, Flangy Software & Adam Vandenberg
 # All rights reserved.
 #
 # See curses.license for license details.
@@ -6,7 +6,7 @@
 import sys
 from _WCurses import *
 
-version = "WCurses 0.1 2005-01-27"
+version = "WCurses 0.3 2008-02-25"
 __version__ = version
 
 # These should come from the size of the current terminal, not constants.

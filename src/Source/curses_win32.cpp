@@ -43,7 +43,6 @@ LOGFONT g_default_font =
 BOOL WINAPI DllMain(HINSTANCE hInst, DWORD wDataSeg, LPVOID lpReserved)
 {
 	INITCOMMONCONTROLSEX ccex;
-	BOOL b;
 
 	switch(wDataSeg)
 	{
@@ -54,7 +53,7 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD wDataSeg, LPVOID lpReserved)
 
 			ccex.dwSize = sizeof(ccex);
 			ccex.dwICC = ICC_WIN95_CLASSES;
-			b = InitCommonControlsEx(&ccex);
+			InitCommonControlsEx(&ccex);
 
 			RegisterTerminalWindowClass();
 			InitializeDefaultFont();
@@ -105,7 +104,6 @@ void RegisterTerminalWindowClass()
 void ProcessMessages()
 {
 	MSG msg;
-
 	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 	{
 		TranslateMessage(&msg);
@@ -120,11 +118,8 @@ void InitializeDefaultFont()
 
 long GetScreenFontHeight(int PointSize)
 {
-	HDC dc;
-	long fontheight;
-
-	dc = GetDC(NULL);
-	fontheight = -MulDiv(PointSize, GetDeviceCaps(dc, LOGPIXELSY), 72);
+	HDC dc = GetDC(NULL);
+	long fontheight = -MulDiv(PointSize, GetDeviceCaps(dc, LOGPIXELSY), 72);
 	ReleaseDC(NULL, dc);
 	return fontheight;
 }

@@ -125,29 +125,25 @@ void InitKeynames(PyObject *dict)
 */
 void InitKeymap(PyObject *dict)
 {
-	PyObject *curseskeyvalue;
-	int i;
-
 	TRACE("InitKeymap");
 
 	g_keymap_dict = PyDict_New();
 
-	for (i=0; g_win_keymap[i].win_key != 0; i++)
+	for (int i=0; g_win_keymap[i].win_key != 0; i++)
 	{
-		curseskeyvalue = PyDict_GetItemString(dict, g_win_keymap[i].curses_name);
-		PyDict_SetItem(g_keymap_dict, PyInt_FromLong(g_win_keymap[i].win_key), curseskeyvalue);
+		PyDict_SetItem(g_keymap_dict, 
+			PyInt_FromLong(g_win_keymap[i].win_key), 
+			PyDict_GetItemString(dict, g_win_keymap[i].curses_name));
 	}
 }
 
 PyMODINIT_FUNC init_WCurses(void)
 {
-	PyObject *module, *mdict;
-
 	if (PyType_Ready(&curses_terminalType) < 0) return;
 	if (PyType_Ready(&curses_windowType) < 0) return;
 
-	module = Py_InitModule("_WCurses", curses_methods);
-	mdict = PyModule_GetDict(module);
+	PyObject *module = Py_InitModule("_WCurses", curses_methods);
+	PyObject *mdict = PyModule_GetDict(module);
 
 	InitKeynames(mdict);
 	InitKeymap(mdict);

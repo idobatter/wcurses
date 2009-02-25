@@ -318,31 +318,26 @@ PyObject *Curses_baudrate(PyObject *self)
 
 PyObject *Curses_initscr(PyObject *self)
 {
-	PyObject *stdscr;
-
 	TRACE("Curses_initscr");
 
-	if (!g_called_initscr)
-	{
-		g_called_initscr = 1;
-
-		g_default_term = Terminal::New();
-		// Keep an extra reference to the default terminal, because we try to decref it when the DLL unloads.
-		Py_INCREF(g_default_term);
-		//Terminal_Show(g_default_term);
-		g_default_term->Show();
-
-		// Set the current terminal to the default one.
-		g_current_term = g_default_term;
-
-		stdscr = Window_New(NULL, 0,0,0,0, false);
-	    return stdscr;
-	}
-	else
+	if (g_called_initscr)
 	{
 		PyErr_SetString(CursesError, "Curses already initialized!");
 		return NULL;
 	}
+
+	g_called_initscr = 1;
+
+	g_default_term = Terminal::New();
+	// Keep an extra reference to the default terminal, because we try to decref it when the DLL unloads.
+	Py_INCREF(g_default_term);
+	//Terminal_Show(g_default_term);
+	g_default_term->Show();
+
+	// Set the current terminal to the default one.
+	g_current_term = g_default_term;
+
+    return Window_New(NULL, 0,0,0,0, false);
 }
 
 PyObject *Curses_flushinp(PyObject *self)

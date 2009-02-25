@@ -914,8 +914,6 @@ PyObject *Window_vline(Window *self, PyObject *args)
 PyObject *Window_border(Window *self, PyObject *args)
 {
 	PyObject *result;
-	int savey, savex;
-	int savescrolling;
 	int ls, rs, ts, bs, tl, tr, bl, br;
 
 	TRACE("Window_border");
@@ -927,9 +925,9 @@ PyObject *Window_border(Window *self, PyObject *args)
 	if(!PyArg_ParseTuple(args, "|iiiiii", &ls, &rs, &ts, &bs, &tl, &tr, &bl, &br))
 		return NULL;
 
-	savey = self->cury;
-	savex = self->curx;
-	savescrolling = self->isScrolling;
+	int savey = self->cury;
+	int savex = self->curx;
+	int savescrolling = self->isScrolling;
 
 	ls = ls ? ls : ACS_VLINE;
 	rs = rs ? rs : ACS_VLINE;

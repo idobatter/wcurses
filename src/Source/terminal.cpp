@@ -169,10 +169,8 @@ Terminal *Terminal::New()
 
 	InsertMenuItem(sysmenu, -1, TRUE, &mitem);
 
-	// Set the default terminal font
 	HFONT font = CreateFontIndirect(&g_default_font);
 	newterm->SetFont(font);
-
 	newterm->SetCursorVisibility(1);
 
 	return newterm;
@@ -231,7 +229,7 @@ int Terminal::SetCursorVisibility(int visibility)
 
 void Terminal::SetFont(HFONT newfont)
 {
-	TEXTMETRIC Metrics;
+	TEXTMETRIC text_metrics;
 	RECT rect,cli_rect;
 
 	RECT rect_sbar;
@@ -240,13 +238,13 @@ void Terminal::SetFont(HFONT newfont)
 
 	HDC DC = GetDC(this->win);
 	SelectFont(DC, newfont);
-	GetTextMetrics(DC, &Metrics);
+	GetTextMetrics(DC, &text_metrics);
 	ReleaseDC(this->win, DC);
 
 	this->font = newfont;
 
-	this->cell_width = Metrics.tmAveCharWidth;
-	this->cell_height = Metrics.tmHeight + Metrics.tmExternalLeading;
+	this->cell_width = text_metrics.tmAveCharWidth;
+	this->cell_height = text_metrics.tmHeight + text_metrics.tmExternalLeading;
 	
 	// find the minimum window size
 	GetWindowRect(this->win,&rect);
@@ -266,28 +264,21 @@ void Terminal::SetFont(HFONT newfont)
 
 void Terminal::OnPaint()
 {
-	int y, x;
-	int colors, fg, bg;
 	int r,g,b;
-	int bg_rgb, fg_rgb;
-	char ch;
-	char_cell ccch;
-	HDC	hdc;
-	PAINTSTRUCT ps;
-//	int last_attr;
 
-	hdc = BeginPaint(this->win, &ps);
+	PAINTSTRUCT ps;
+	HDC	hdc = BeginPaint(this->win, &ps);
 	SelectFont(hdc,this->font);
 	
-	for (y=0; y<this->height; y++)
+	for (int y=0; y<this->height; y++)
 	{
-		x = 0;
-		while (x<this->width)
+		int x = 0;
+		while (x < this->width)
 		{
-			ccch = this->buffer[y][x];
-			colors = g_color_pairs[ (ccch & ATTR_COLOR) >> 8 ];
-			fg = colors & 0xf;
-			bg = (colors & 0xf0) >> 4;
+			char_cell ccch = this->buffer[y][x];
+			int colors = g_color_pairs[ (ccch & ATTR_COLOR) >> 8 ];
+			int fg = colors & 0xf;
+			int bg = (colors & 0xf0) >> 4;
 
 			crack_color(fg, &r, &g, &b);
 
@@ -298,10 +289,9 @@ void Terminal::OnPaint()
 				b = b?255:0;
 			}
 
-			fg_rgb = RGB(r, g, b);
-
+			int fg_rgb = RGB(r, g, b);
 			crack_color(bg, &r, &g, &b);
-			bg_rgb = RGB(r, g, b);
+			int bg_rgb = RGB(r, g, b);
 
 			if (! (ccch & ATTR_REVERSE))
 			{
@@ -313,18 +303,8 @@ void Terminal::OnPaint()
 				SetTextColor(hdc,bg_rgb);
 				SetBkColor(hdc,fg_rgb);
 			}
-/*
-			// Try to find a run of characters with the same attributes.
-			last_attr = ccch & ~ATTR_CHAR;
-			
-			while ((x < this->width) && ((this->buffer[y][x] & ~ATTR_CHAR) == last_attr))
-			{
-				ch = this->buffer[y][x] & ATTR_CHAR;
-				TextOut(hdc, x * this->cell_width, y * this->cell_height, &ch, 1);
-				x++;
-			}
-*/
-			ch = this->buffer[y][x] & ATTR_CHAR;
+
+			char ch = this->buffer[y][x] & ATTR_CHAR;
 			TextOut(hdc, x * this->cell_width, y * this->cell_height, &ch, 1);
 			x++;
 		}
@@ -349,7 +329,6 @@ void Terminal::OnKillFocus(HWND newFocus)
 {
 	if (this->has_caret)
 	{
-//				HideCaret(term->win);
 		DestroyCaret();
 		this->has_caret = 0;
 	}
