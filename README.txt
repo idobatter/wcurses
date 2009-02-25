@@ -17,5 +17,8 @@ Issue tracker is on Google Code:
 * http://code.google.com/p/wcurses/issues/list
 
 
+To compile this project you will need Visual Studio 2008 and Python 2.5.
+
+
 -Adam Vandenberg
 http://adamv.com/
